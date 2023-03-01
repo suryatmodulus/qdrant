@@ -452,6 +452,7 @@ async fn test_collection_delete_points_by_filter_with_shards(shard_number: u32) 
         should: None,
         must: Some(vec![Condition::HasId(HasIdCondition::from(to_be_deleted))]),
         must_not: None,
+        nested: None,
     };
 
     let delete_points = CollectionUpdateOperations::PointOperation(

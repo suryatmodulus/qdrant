@@ -825,10 +825,12 @@ impl SegmentEntry for Segment {
                 .take(limit.unwrap_or(usize::MAX))
                 .collect(),
             Some(condition) => {
+                eprintln!("read_filtered: {:?}", condition);
                 let query_cardinality = {
                     let payload_index = self.payload_index.borrow();
                     payload_index.estimate_cardinality(condition)
                 };
+                eprintln!("query_cardinality: {:?}", query_cardinality);
 
                 // ToDo: Add telemetry for this heuristics
 
@@ -859,7 +861,7 @@ impl SegmentEntry for Segment {
                 // use `query cardinality` as a starting point.
                 let exp_index_checks = query_cardinality.max;
 
-                if exp_stream_checks > exp_index_checks {
+                if dbg!(exp_stream_checks > exp_index_checks) {
                     self.filtered_read_by_index(offset, limit, condition)
                 } else {
                     self.filtered_read_by_id_stream(offset, limit, condition)

@@ -325,6 +325,12 @@ message Filter {
   repeated Condition should = 1; // At least one of those conditions should match
   repeated Condition must = 2; // All conditions must match
   repeated Condition must_not = 3; // All conditions must NOT match
+  optional NestedFilter nested = 4; // Nested filter
+}
+
+message NestedFilter {
+  string path = 1; // Path to nested object
+  Filter filter = 2; // Filter condition
 }
 
 message Condition {

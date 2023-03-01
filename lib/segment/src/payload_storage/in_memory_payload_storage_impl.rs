@@ -94,6 +94,7 @@ mod tests {
                 )),
             ]),
             must_not: None,
+            nested: None,
         };
 
         // Example:

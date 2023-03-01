@@ -135,7 +135,7 @@ def nested_payload_collection_setup(collection_name, on_disk_payload=False):
                                 {
                                     "name": "Tokyo",
                                     "population": 9.3,
-                                    "sightseeing": ["Tokyo Tower", "Tokyo Skytree"]
+                                    "sightseeing": ["Tokyo Tower", "Tokyo Skytree", "Tokyo Disneyland"]
                                 },
                                 {
                                     "name": "Osaka",
@@ -221,7 +221,7 @@ def test_payload_indexing_operations():
     assert response.json()['result']['payload_schema']['country.capital']['data_type'] == "keyword"
     assert response.json()['result']['payload_schema']['country.capital']['points'] == 4
     assert response.json()['result']['payload_schema']['country.cities[].population']['data_type'] == "float"
-    assert response.json()['result']['payload_schema']['country.cities[].population']['points'] == 4 # indexed records
+    assert response.json()['result']['payload_schema']['country.cities[].population']['points'] == 4  # indexed records
 
     # Search nested through with payload index
     response = request_with_validation(
@@ -278,7 +278,7 @@ def test_payload_indexing_operations():
             "filter": {
                 "should": [
                     {
-                        "key": "country.cities.population", # Do not implicitly do inside nested array
+                        "key": "country.cities.population",  # Do not implicitly do inside nested array
                         "range": {
                             "gte": 9.0,
                         }
@@ -338,6 +338,56 @@ def test_payload_indexing_operations():
     assert len(response.json()['result']['points']) == 1
     assert response.json()['result']['points'][0]['payload']['country']['capital'] == "Paris"
 
+    # Search without nested filter
+    response = request_with_validation(
+        api='/collections/{collection_name}/points/scroll',
+        method="POST",
+        path_params={'collection_name': collection_name},
+        body={
+            "filter": {
+                "must": [
+                    {
+                        "key": "country.cities[].sightseeing",
+                        "values_count": {
+                            "gt": 2
+                        }
+                    }
+                ]
+            },
+            "limit": 3
+        }
+    )
+    assert response.ok
+    assert len(response.json()['result']['points']) == 1
+    assert response.json()['result']['points'][0]['payload']['country']['name'] == "Japan"
+
+    # Search with nested filter on non indexed payload
+    response = request_with_validation(
+        api='/collections/{collection_name}/points/scroll',
+        method="POST",
+        path_params={'collection_name': collection_name},
+        body={
+            "filter": {
+                "nested": {
+                    "path": "country.cities[]",
+                    "must": [
+                        {
+                            "key": "sightseeing",
+                            "values_count": {
+                                "gt": 2
+                            }
+                        }
+                    ]
+                },
+            },
+            "limit": 3
+        }
+    )
+    assert response.ok
+    print(json.dumps(response.json(), indent=2))
+    assert len(response.json()['result']['points']) == 1
+    assert response.json()['result']['points'][0]['payload']['country']['name'] == "Japan"
+
     # Delete indexes
     response = request_with_validation(
         api='/collections/{collection_name}/index/{field_name}',
@@ -362,4 +412,3 @@ def test_payload_indexing_operations():
     )
     assert response.ok
     assert len(response.json()['result']['payload_schema']) == 0
-

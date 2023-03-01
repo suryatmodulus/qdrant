@@ -1214,6 +1214,17 @@ pub struct Filter {
     pub must: Option<Vec<Condition>>,
     /// All conditions must NOT match
     pub must_not: Option<Vec<Condition>>,
+    /// Nested filters
+    pub nested: Option<Box<NestedFilter>>,
+}
+
+#[derive(Debug, Deserialize, Serialize, JsonSchema, Clone, PartialEq)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "snake_case")]
+pub struct NestedFilter {
+    pub path: String,
+    #[serde(flatten)]
+    pub filter: Filter,
 }
 
 impl Filter {
@@ -1222,6 +1233,7 @@ impl Filter {
             should: Some(vec![condition]),
             must: None,
             must_not: None,
+            nested: None,
         }
     }
 
@@ -1230,6 +1242,7 @@ impl Filter {
             should: None,
             must: Some(vec![condition]),
             must_not: None,
+            nested: None,
         }
     }
 
@@ -1238,6 +1251,7 @@ impl Filter {
             should: None,
             must: None,
             must_not: Some(vec![condition]),
+            nested: None,
         }
     }
 }
@@ -1280,6 +1294,7 @@ mod tests {
             ))]),
             must_not: None,
             should: None,
+            nested: None,
         };
         let json = serde_json::to_string_pretty(&filter).unwrap();
         eprintln!("{json}")
@@ -1452,6 +1467,37 @@ mod tests {
                 value: ValueVariants::Keyword("world".to_owned())
             })
         );
+    }
+
+    #[test]
+    fn test_parse_nested_filter_query() {
+        let query = r#"
+        {
+           "nested": {
+              "path": "country.cities[]",
+              "must": [
+                  {
+                      "key": "country.cities[].sightseeing",
+                      "values_count": {
+                          "gt": 2
+                      }
+                  }
+              ]
+            }
+        }
+        "#;
+        let result: Filter = serde_json::from_str(query).unwrap();
+        let nested_filter = result.nested.unwrap();
+        assert_eq!(nested_filter.path, "country.cities[]");
+        let musts = nested_filter.filter.must.unwrap();
+        assert_eq!(musts.len(), 1);
+        let condition = musts.get(0).unwrap();
+        match condition {
+            Condition::Field(field) => {
+                assert_eq!(field.key, "country.cities[].sightseeing");
+            }
+            _ => panic!("Condition expected"),
+        }
     }
 
     #[test]

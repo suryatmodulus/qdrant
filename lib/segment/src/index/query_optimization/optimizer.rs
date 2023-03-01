@@ -9,7 +9,9 @@ use crate::index::query_estimator::{
     combine_must_estimations, combine_should_estimations, invert_estimation,
 };
 use crate::index::query_optimization::condition_converter::condition_converter;
-use crate::index::query_optimization::optimized_filter::{OptimizedCondition, OptimizedFilter};
+use crate::index::query_optimization::optimized_filter::{
+    NestedOptimizedFilter, OptimizedCondition, OptimizedFilter,
+};
 use crate::index::query_optimization::payload_provider::PayloadProvider;
 use crate::types::{Condition, Filter, PayloadKeyType};
 
@@ -96,6 +98,22 @@ where
             } else {
                 None
             }
+        }),
+        nested: filter.nested.as_ref().map(|nested| {
+            let (optimized_filter, estimation) = optimize_filter(
+                &nested.filter,
+                id_tracker,
+                field_indexes,
+                payload_provider.clone(),
+                estimator,
+                total,
+            );
+            filter_estimations.push(estimation);
+            let nested_optimized_filter = NestedOptimizedFilter {
+                path: &nested.path,
+                filter: optimized_filter,
+            };
+            Box::new(nested_optimized_filter)
         }),
     };
 

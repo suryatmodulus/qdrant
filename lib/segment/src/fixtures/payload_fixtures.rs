@@ -187,6 +187,7 @@ pub fn random_must_filter<R: Rng + ?Sized>(rnd_gen: &mut R, num_conditions: usiz
         should: None,
         must: Some(must_conditions),
         must_not: None,
+        nested: None,
     }
 }
 
@@ -218,6 +219,7 @@ pub fn random_filter<R: Rng + ?Sized>(rnd_gen: &mut R, total_conditions: usize) 
         should: should_conditions_opt,
         must: must_conditions_opt,
         must_not: None,
+        nested: None,
     }
 }
 
@@ -236,6 +238,7 @@ pub fn random_nested_filter<R: Rng + ?Sized>(rnd_gen: &mut R) -> Filter {
         should: Some(vec![condition]),
         must: None,
         must_not: None,
+        nested: None,
     }
 }
 

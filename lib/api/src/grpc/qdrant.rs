@@ -2236,6 +2236,19 @@ pub struct Filter {
     /// All conditions must NOT match
     #[prost(message, repeated, tag = "3")]
     pub must_not: ::prost::alloc::vec::Vec<Condition>,
+    /// Nested filter
+    #[prost(message, optional, boxed, tag = "4")]
+    pub nested: ::core::option::Option<::prost::alloc::boxed::Box<NestedFilter>>,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct NestedFilter {
+    /// Path to nested object
+    #[prost(string, tag = "1")]
+    pub path: ::prost::alloc::string::String,
+    /// Filter condition
+    #[prost(message, optional, boxed, tag = "2")]
+    pub filter: ::core::option::Option<::prost::alloc::boxed::Box<Filter>>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]

@@ -44,6 +44,7 @@ mod tests {
             should: None,
             must: None,
             must_not: Some(vec![Condition::HasId(ids.into())]),
+            nested: None,
         };
 
         let res = segment
@@ -101,6 +102,7 @@ mod tests {
             should: None,
             must: None,
             must_not: Some(vec![Condition::HasId(ids.into())]),
+            nested: None,
         };
 
         let res = segment

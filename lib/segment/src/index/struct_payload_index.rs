@@ -341,8 +341,9 @@ impl PayloadIndex for StructPayloadIndex {
         query: &'a Filter,
     ) -> Box<dyn Iterator<Item = PointOffsetType> + 'a> {
         // Assume query is already estimated to be small enough so we can iterate over all matched ids
-
+        eprintln!("query_point: {:?}", query);
         let query_cardinality = self.estimate_cardinality(query);
+        eprintln!("query_cardinality: {:?}", query_cardinality);
         return if query_cardinality.primary_clauses.is_empty() {
             let full_scan_iterator =
                 ArcAtomicRefCellIterator::new(self.id_tracker.clone(), |points_iterator| {

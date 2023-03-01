@@ -21,10 +21,10 @@ use crate::grpc::qdrant::{
     with_vectors_selector, CollectionDescription, CollectionOperationResponse, Condition, Distance,
     FieldCondition, Filter, GeoBoundingBox, GeoPoint, GeoRadius, HasIdCondition, HealthCheckReply,
     HnswConfigDiff, IsEmptyCondition, ListCollectionsResponse, ListValue, Match, NamedVectors,
-    PayloadExcludeSelector, PayloadIncludeSelector, PayloadIndexParams, PayloadSchemaInfo,
-    PayloadSchemaType, PointId, Range, ScoredPoint, SearchParams, Struct, TextIndexParams,
-    TokenizerType, Value, ValuesCount, Vector, Vectors, VectorsSelector, WithPayloadSelector,
-    WithVectorsSelector,
+    NestedFilter, PayloadExcludeSelector, PayloadIncludeSelector, PayloadIndexParams,
+    PayloadSchemaInfo, PayloadSchemaType, PointId, Range, ScoredPoint, SearchParams, Struct,
+    TextIndexParams, TokenizerType, Value, ValuesCount, Vector, Vectors, VectorsSelector,
+    WithPayloadSelector, WithVectorsSelector,
 };
 
 pub fn payload_to_proto(payload: segment::types::Payload) -> HashMap<String, Value> {
@@ -501,6 +501,33 @@ fn conditions_helper_to_grpc(conditions: Option<Vec<segment::types::Condition>>)
     }
 }
 
+impl TryFrom<NestedFilter> for segment::types::NestedFilter {
+    type Error = Status;
+
+    fn try_from(value: NestedFilter) -> Result<Self, Self::Error> {
+        Ok(Self {
+            path: value.path,
+            filter: {
+                match value.filter {
+                    Some(filter) => (*filter).try_into()?,
+                    None => {
+                        return Err(Status::invalid_argument("No filter  provided".to_string()))
+                    }
+                }
+            },
+        })
+    }
+}
+
+impl From<segment::types::NestedFilter> for NestedFilter {
+    fn from(value: segment::types::NestedFilter) -> Self {
+        Self {
+            path: value.path,
+            filter: Some(Box::new(value.filter.into())),
+        }
+    }
+}
+
 impl TryFrom<Filter> for segment::types::Filter {
     type Error = Status;
 
@@ -509,6 +536,13 @@ impl TryFrom<Filter> for segment::types::Filter {
             should: conditions_helper_from_grpc(value.should)?,
             must: conditions_helper_from_grpc(value.must)?,
             must_not: conditions_helper_from_grpc(value.must_not)?,
+            nested: value
+                .nested
+                .map(|nested| {
+                    let unbox_nested = *nested;
+                    unbox_nested.try_into().map(Box::new)
+                })
+                .transpose()?,
         })
     }
 }
@@ -519,6 +553,7 @@ impl From<segment::types::Filter> for Filter {
             should: conditions_helper_to_grpc(value.should),
             must: conditions_helper_to_grpc(value.must),
             must_not: conditions_helper_to_grpc(value.must_not),
+            nested: value.nested.map(|nested| Box::new((*nested).into())),
         }
     }
 }
